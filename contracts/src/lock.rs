@@ -16,6 +16,7 @@ use crate::users;
 /// `Ok(lock_id)` on success, `Err(SavingsError)` on failure
 ///
 /// # Errors
+/// * `ContractPaused` - If contract is currently paused
 /// * `InvalidAmount` - If amount is zero or negative
 /// * `InvalidTimestamp` - If duration is zero or negative
 /// * `UserNotFound` - If user doesn't exist in the system
@@ -28,6 +29,17 @@ pub fn create_lock_save(
 ) -> Result<u64, SavingsError> {
     // Require authorization from the user
     user.require_auth();
+
+    // Check if contract is paused
+    let is_paused: bool = env
+        .storage()
+        .persistent()
+        .get(&DataKey::Paused)
+        .unwrap_or(false);
+    
+    if is_paused {
+        return Err(SavingsError::ContractPaused);
+    }
 
     // Validate inputs
     if amount <= 0 {
@@ -142,6 +154,7 @@ pub fn get_user_lock_saves(env: &Env, user: &Address) -> Vec<u64> {
 /// `Ok(amount)` on success, `Err(SavingsError)` on failure
 ///
 /// # Errors
+/// * `ContractPaused` - If contract is currently paused
 /// * `PlanNotFound` - If lock save doesn't exist
 /// * `Unauthorized` - If user is not the owner
 /// * `TooEarly` - If lock save hasn't matured yet
@@ -153,6 +166,17 @@ pub fn withdraw_lock_save(
 ) -> Result<i128, SavingsError> {
     // Require authorization from the user
     user.require_auth();
+
+    // Check if contract is paused
+    let is_paused: bool = env
+        .storage()
+        .persistent()
+        .get(&DataKey::Paused)
+        .unwrap_or(false);
+    
+    if is_paused {
+        return Err(SavingsError::ContractPaused);
+    }
 
     // Get the lock save
     let mut lock_save = get_lock_save(env, lock_id)

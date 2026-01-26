@@ -15,7 +15,7 @@ use soroban_sdk::{
     Env, String, Symbol, Vec,
 };
 pub use storage_types::{
-    DataKey, GoalSave, GoalSave, GroupSave, GroupSave, LockSave, LockSave, MintPayload, PlanType,
+    DataKey, GoalSave, GoalSaveView, GroupSave, GroupSaveView, LockSave, LockSaveView, MintPayload, PlanType,
     SavingsPlan,
 };
 
@@ -298,18 +298,18 @@ impl NesteraContract {
     pub fn get_user_ongoing_lock_saves(
         env: Env,
         user: Address,
-    ) -> Result<Vec<LockSave>, SavingsError> {
+    ) -> Result<Vec<LockSaveView>, SavingsError> {
         views::get_user_ongoing_lock_saves(&env, user)
     }
 
     pub fn get_user_matured_lock_saves(
         env: Env,
         user: Address,
-    ) -> Result<Vec<LockSave>, SavingsError> {
+    ) -> Result<Vec<LockSaveView>, SavingsError> {
         views::get_user_matured_lock_saves(&env, user)
     }
 
-    pub fn get_lock_save(env: Env, user: Address, lock_id: u64) -> Result<LockSave, SavingsError> {
+    pub fn get_lock_save(env: Env, user: Address, lock_id: u64) -> Result<LockSaveView, SavingsError> {
         views::get_lock_save(&env, user, lock_id)
     }
 
@@ -317,18 +317,18 @@ impl NesteraContract {
     pub fn get_user_live_goal_saves(
         env: Env,
         user: Address,
-    ) -> Result<Vec<GoalSave>, SavingsError> {
+    ) -> Result<Vec<GoalSaveView>, SavingsError> {
         views::get_user_live_goal_saves(&env, user)
     }
 
     pub fn get_user_completed_goal_saves(
         env: Env,
         user: Address,
-    ) -> Result<Vec<GoalSave>, SavingsError> {
+    ) -> Result<Vec<GoalSaveView>, SavingsError> {
         views::get_user_completed_goal_saves(&env, user)
     }
 
-    pub fn get_goal_save(env: Env, user: Address, goal_id: u64) -> Result<GoalSave, SavingsError> {
+    pub fn get_goal_save(env: Env, user: Address, goal_id: u64) -> Result<GoalSaveView, SavingsError> {
         views::get_goal_save(&env, user, goal_id)
     }
 
@@ -336,14 +336,14 @@ impl NesteraContract {
     pub fn get_user_live_group_saves(
         env: Env,
         user: Address,
-    ) -> Result<Vec<GroupSave>, SavingsError> {
+    ) -> Result<Vec<GroupSaveView>, SavingsError> {
         views::get_user_live_group_saves(&env, user)
     }
 
     pub fn get_user_completed_group_saves(
         env: Env,
         user: Address,
-    ) -> Result<Vec<GroupSave>, SavingsError> {
+    ) -> Result<Vec<GroupSaveView>, SavingsError> {
         views::get_user_completed_group_saves(&env, user)
     }
 
@@ -351,7 +351,7 @@ impl NesteraContract {
         env: Env,
         user: Address,
         group_id: u64,
-    ) -> Result<GroupSave, SavingsError> {
+    ) -> Result<GroupSaveView, SavingsError> {
         views::get_group_save(&env, user, group_id)
     }
 
@@ -433,7 +433,7 @@ impl NesteraContract {
     ///
     /// # Returns
     /// `Some(GroupSave)` if the group exists, `None` otherwise
-    pub fn get_group_save(env: Env, group_id: u64) -> Option<crate::storage_types::GroupSave> {
+    pub fn get_group_save_detail(env: Env, group_id: u64) -> Option<crate::storage_types::GroupSave> {
         group::get_group_save(&env, group_id)
     }
 
@@ -558,7 +558,7 @@ impl NesteraContract {
     ///
     /// # Returns
     /// The LockSave struct if found, panics if not found
-    pub fn get_lock_save(env: Env, lock_id: u64) -> LockSave {
+    pub fn get_lock_save_detail(env: Env, lock_id: u64) -> LockSave {
         lock::get_lock_save(&env, lock_id)
             .unwrap_or_else(|| panic_with_error!(&env, SavingsError::PlanNotFound))
     }
@@ -618,7 +618,7 @@ impl NesteraContract {
         goal::break_goal_save(&env, user, goal_id).unwrap_or_else(|e| panic_with_error!(&env, e))
     }
 
-    pub fn get_goal_save(env: Env, goal_id: u64) -> GoalSave {
+    pub fn get_goal_save_detail(env: Env, goal_id: u64) -> GoalSave {
         goal::get_goal_save(&env, goal_id)
             .unwrap_or_else(|| panic_with_error!(&env, SavingsError::PlanNotFound))
     }
@@ -626,7 +626,175 @@ impl NesteraContract {
     pub fn get_user_goal_saves(env: Env, user: Address) -> Vec<u64> {
         goal::get_user_goal_saves(&env, &user)
     }
+
+    // ========== Admin Control Functions ==========
+
+    /// Sets or updates the admin address
+    pub fn set_admin(env: Env, current_admin: Address, new_admin: Address) -> Result<(), SavingsError> {
+        current_admin.require_auth();
+
+        let stored_admin: Option<Address> = env.storage().instance().get(&DataKey::Admin);
+        
+        if let Some(admin) = stored_admin {
+            if admin != current_admin {
+                return Err(SavingsError::Unauthorized);
+            }
+        }
+
+        env.storage().instance().set(&DataKey::Admin, &new_admin);
+
+        env.events().publish(
+            (soroban_sdk::symbol_short!("set_admin"),),
+            new_admin,
+        );
+
+        Ok(())
+    }
+
+    /// Sets platform settings (minimum deposit, withdrawal fee, platform fee)
+    pub fn set_platform_settings(
+        env: Env,
+        admin: Address,
+        minimum_deposit: i128,
+        withdrawal_fee: i128,
+        platform_fee: i128,
+    ) -> Result<(), SavingsError> {
+        admin.require_auth();
+
+        let stored_admin: Option<Address> = env.storage().instance().get(&DataKey::Admin);
+        
+        if let Some(admin_addr) = stored_admin {
+            if admin_addr != admin {
+                return Err(SavingsError::Unauthorized);
+            }
+        } else {
+            return Err(SavingsError::Unauthorized);
+        }
+
+        if minimum_deposit < 0 || withdrawal_fee < 0 || platform_fee < 0 {
+            return Err(SavingsError::InvalidAmount);
+        }
+
+        env.storage().persistent().set(&DataKey::MinimumDeposit, &minimum_deposit);
+        env.storage().persistent().set(&DataKey::WithdrawalFee, &withdrawal_fee);
+        env.storage().persistent().set(&DataKey::PlatformFee, &platform_fee);
+
+        env.events().publish(
+            (soroban_sdk::symbol_short!("settings"),),
+            (minimum_deposit, withdrawal_fee, platform_fee),
+        );
+
+        Ok(())
+    }
+
+    /// Pauses all contract operations for emergency control
+    pub fn pause(env: Env, admin: Address) -> Result<(), SavingsError> {
+        admin.require_auth();
+
+        let stored_admin: Option<Address> = env.storage().instance().get(&DataKey::Admin);
+        
+        if let Some(admin_addr) = stored_admin {
+            if admin_addr != admin {
+                return Err(SavingsError::Unauthorized);
+            }
+        } else {
+            return Err(SavingsError::Unauthorized);
+        }
+
+        env.storage().persistent().set(&DataKey::Paused, &true);
+
+        env.events().publish(
+            (soroban_sdk::symbol_short!("paused"),),
+            admin,
+        );
+
+        Ok(())
+    }
+
+    /// Unpauses contract operations
+    pub fn unpause(env: Env, admin: Address) -> Result<(), SavingsError> {
+        admin.require_auth();
+
+        let stored_admin: Option<Address> = env.storage().instance().get(&DataKey::Admin);
+        
+        if let Some(admin_addr) = stored_admin {
+            if admin_addr != admin {
+                return Err(SavingsError::Unauthorized);
+            }
+        } else {
+            return Err(SavingsError::Unauthorized);
+        }
+
+        env.storage().persistent().set(&DataKey::Paused, &false);
+
+        env.events().publish(
+            (soroban_sdk::symbol_short!("unpaused"),),
+            admin,
+        );
+
+        Ok(())
+    }
+
+    /// Emergency withdrawal function for admin
+    pub fn emergency_withdraw(env: Env, admin: Address, amount: i128) -> Result<(), SavingsError> {
+        admin.require_auth();
+
+        let stored_admin: Option<Address> = env.storage().instance().get(&DataKey::Admin);
+        
+        if let Some(admin_addr) = stored_admin {
+            if admin_addr != admin {
+                return Err(SavingsError::Unauthorized);
+            }
+        } else {
+            return Err(SavingsError::Unauthorized);
+        }
+
+        if amount <= 0 {
+            return Err(SavingsError::InvalidAmount);
+        }
+
+        env.events().publish(
+            (soroban_sdk::symbol_short!("emerg_wd"),),
+            (admin, amount),
+        );
+
+        Ok(())
+    }
+
+    /// Checks if the contract is currently paused
+    pub fn is_paused(env: Env) -> bool {
+        env.storage()
+            .persistent()
+            .get(&DataKey::Paused)
+            .unwrap_or(false)
+    }
+
+    /// Gets the current platform settings
+    pub fn get_platform_settings(env: Env) -> (i128, i128, i128) {
+        let minimum_deposit = env.storage()
+            .persistent()
+            .get(&DataKey::MinimumDeposit)
+            .unwrap_or(0);
+        let withdrawal_fee = env.storage()
+            .persistent()
+            .get(&DataKey::WithdrawalFee)
+            .unwrap_or(0);
+        let platform_fee = env.storage()
+            .persistent()
+            .get(&DataKey::PlatformFee)
+            .unwrap_or(0);
+
+        (minimum_deposit, withdrawal_fee, platform_fee)
+    }
+
+    /// Gets the current admin address
+    pub fn get_admin(env: Env) -> Option<Address> {
+        env.storage().instance().get(&DataKey::Admin)
+    }
 }
 
 #[cfg(test)]
 mod test;
+
+#[cfg(test)]
+mod admin_tests;
