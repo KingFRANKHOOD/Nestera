@@ -74,11 +74,7 @@ pub fn create_group_save(
 
     // Get the next group ID
     let next_id_key = DataKey::NextGroupId;
-    let group_id: u64 = env
-        .storage()
-        .persistent()
-        .get(&next_id_key)
-        .unwrap_or(1u64);
+    let group_id: u64 = env.storage().persistent().get(&next_id_key).unwrap_or(1u64);
 
     // Create the GroupSave struct with initial values
     let new_group = GroupSave {
@@ -121,10 +117,8 @@ pub fn create_group_save(
     add_group_to_user_list(env, &creator, group_id)?;
 
     // Emit event for group creation
-    env.events().publish(
-        (soroban_sdk::symbol_short!("grp_new"), creator),
-        group_id,
-    );
+    env.events()
+        .publish((soroban_sdk::symbol_short!("grp_new"), creator), group_id);
 
     Ok(group_id)
 }
@@ -208,11 +202,7 @@ fn add_group_to_user_list(env: &Env, user: &Address, group_id: u64) -> Result<()
 /// - Group doesn't exist
 /// - Group is not public
 /// - User is already a member
-pub fn join_group_save(
-    env: &Env,
-    user: Address,
-    group_id: u64,
-) -> Result<(), SavingsError> {
+pub fn join_group_save(env: &Env, user: Address, group_id: u64) -> Result<(), SavingsError> {
     // Ensure user exists
     if !users::user_exists(env, &user) {
         return Err(SavingsError::UserNotFound);
@@ -264,10 +254,8 @@ pub fn join_group_save(
     env.storage().persistent().set(&contribution_key, &0i128);
 
     // Emit event for joining group
-    env.events().publish(
-        (soroban_sdk::symbol_short!("grp_join"), user),
-        group_id,
-    );
+    env.events()
+        .publish((soroban_sdk::symbol_short!("grp_join"), user), group_id);
 
     Ok(())
 }

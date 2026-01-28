@@ -458,12 +458,10 @@ mod tests {
 
         env.mock_all_auths();
 
-
         let goal_name = Symbol::new(&env, "nouser");
         let target = 5000i128;
         let initial = 1000i128;
 
-     
         client.create_goal_save(&user, &goal_name, &target, &initial);
     }
 }

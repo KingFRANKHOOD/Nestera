@@ -17,7 +17,7 @@ env:
 
 jobs:
   contract:
-    name: Contract (Format, Build, Test)
+    name: Contract Validation
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -57,3 +57,14 @@ jobs:
 
       - name: Run tests
         run: cargo test
+
+      - name: Verify WASM artifact
+        run: |
+          if ls ../target/wasm32-unknown-unknown/release/*.wasm 1> /dev/null 2>&1; then
+            echo "✓ WASM file generated successfully"
+            ls -lh ../target/wasm32-unknown-unknown/release/*.wasm
+          else
+            echo "✗ WASM file not found"
+            find ../target -name "*.wasm" -type f
+            exit 1
+          fi
