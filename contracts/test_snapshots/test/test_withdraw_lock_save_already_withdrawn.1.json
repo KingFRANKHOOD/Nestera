@@ -77,6 +77,13 @@
   ],
   "ledger": {
     "protocol_version": 23,
+    "sequence_number": 0,
+    "timestamp": 0,
+    "network_id": "0000000000000000000000000000000000000000000000000000000000000000",
+    "base_reserve": 0,
+    "min_persistent_entry_ttl": 4096,
+    "min_temp_entry_ttl": 16,
+    "max_entry_ttl": 6312000,
     "sequence_number": 100,
     "timestamp": 1200,
     "network_id": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -359,6 +366,7 @@
                     "executable": {
                       "wasm": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
                     },
+                    "storage": null
                     "storage": [
                       {
                         "key": {

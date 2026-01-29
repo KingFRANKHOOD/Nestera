@@ -1,3 +1,4 @@
+use soroban_sdk::{contracttype, contracterror, Address, Symbol};
 use soroban_sdk::{contracttype, Address, String, Symbol};
 
 /// Represents the different types of savings plans available in Nestera
@@ -33,6 +34,7 @@ pub struct User {
     pub savings_count: u32,
 }
 
+/// Represents a Lock Save plan with fixed duration
 impl User {
     pub fn new() -> Self {
         Self {
@@ -75,6 +77,17 @@ pub struct LockSave {
     pub is_withdrawn: bool,
 }
 
+/// Custom error types for the savings contract
+#[contracterror]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum SavingsError {
+    InvalidAmount = 1,
+    InvalidDuration = 2,
+    UserNotFound = 3,
+    LockNotFound = 4,
+    LockNotMatured = 5,
+    AlreadyWithdrawn = 6,
+    Unauthorized = 7,
 /// Represents a Goal Save plan with target amount
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
