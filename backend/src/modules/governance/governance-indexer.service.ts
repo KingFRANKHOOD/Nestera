@@ -29,7 +29,7 @@ export class GovernanceIndexerService implements OnModuleInit {
     private readonly proposalRepo: Repository<GovernanceProposal>,
     @InjectRepository(Vote)
     private readonly voteRepo: Repository<Vote>,
-  ) {}
+  ) { }
 
   onModuleInit() {
     this.initIndexer();
@@ -66,7 +66,7 @@ export class GovernanceIndexerService implements OnModuleInit {
     startBlock: bigint,
     endBlock: bigint,
   ): Promise<void> {
-    const onChainId = proposalId.toString();
+    const onChainId = Number(proposalId);
 
     const existing = await this.proposalRepo.findOneBy({ onChainId });
     if (existing) {
@@ -98,7 +98,7 @@ export class GovernanceIndexerService implements OnModuleInit {
     support: number,
     weight: bigint,
   ): Promise<void> {
-    const onChainId = proposalId.toString();
+    const onChainId = Number(proposalId);
 
     const proposal = await this.proposalRepo.findOneBy({ onChainId });
     if (!proposal) {
@@ -119,14 +119,14 @@ export class GovernanceIndexerService implements OnModuleInit {
 
     if (existing) {
       existing.direction = direction;
-      existing.weight = weight.toString();
+      existing.weight = Number(weight);
       await this.voteRepo.save(existing);
       this.logger.debug(`Updated vote for wallet=${voter} on proposal=${onChainId}`);
     } else {
       const vote = this.voteRepo.create({
         walletAddress: voter,
         direction,
-        weight: weight.toString(),
+        weight: Number(weight),
         proposal,
         proposalId: proposal.id,
       });
