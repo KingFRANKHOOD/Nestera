@@ -63,7 +63,9 @@ describe('AnalyticsService', () => {
     jest.useFakeTimers().setSystemTime(now);
 
     userRepository.findOne.mockResolvedValue({ id: userId, publicKey });
-    blockchainSavingsService.getUserSavingsBalance.mockResolvedValue({ total: 1000 });
+    blockchainSavingsService.getUserSavingsBalance.mockResolvedValue({
+      total: 1000,
+    });
 
     // Events in reverse chronological order
     eventRepository.find.mockResolvedValue([
@@ -84,7 +86,10 @@ describe('AnalyticsService', () => {
       },
     ]);
 
-    const result = await service.getPortfolioTimeline(userId, PortfolioTimeframe.WEEK);
+    const result = await service.getPortfolioTimeline(
+      userId,
+      PortfolioTimeframe.WEEK,
+    );
 
     // Expecting 7 data points (one per day)
     expect(result).toHaveLength(7);
@@ -99,14 +104,14 @@ describe('AnalyticsService', () => {
     // periodEnd = now - i * interval
     // timeline.push({ date: periodEnd, value: runningBalance })
     // runningBalance -= netChangeInPeriod
-    
+
     // Result[6] is i=0 (now): value 1000. runningBalance becomes 1000 - 0 = 1000.
     // Result[5] is i=1 (now - 1d): value 1000. runningBalance becomes 1000 - 200 = 800.
     // Result[4] is i=2 (now - 2d): value 800. runningBalance becomes 800 - (-100) = 900.
     // Result[3] is i=3 (now - 3d): value 900. runningBalance becomes 900 - 50 = 850.
 
     expect(result[6].value).toBe(1000);
-    expect(result[5].value).toBe(1000); 
+    expect(result[5].value).toBe(1000);
     expect(result[4].value).toBe(800);
     expect(result[3].value).toBe(900);
     expect(result[2].value).toBe(850);

@@ -13,6 +13,7 @@ import { User } from '../user/entities/user.entity';
 import { UserSubscription } from '../savings/entities/user-subscription.entity';
 import { SavingsProduct } from '../savings/entities/savings-product.entity';
 import { DepositHandler } from './event-handlers/deposit.handler';
+import { YieldHandler } from './event-handlers/yield.handler';
 import { IndexerService } from './indexer.service';
 
 @Global()
@@ -35,12 +36,14 @@ import { IndexerService } from './indexer.service';
     StellarEventListenerService,
     IndexerService,
     DepositHandler,
+    YieldHandler,
   ],
   exports: [
     StellarService,
     SavingsService,
     StellarEventListenerService,
     DepositHandler,
+    YieldHandler,
   ],
 })
 export class BlockchainModule {}

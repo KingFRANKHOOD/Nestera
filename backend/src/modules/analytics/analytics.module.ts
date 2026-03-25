@@ -6,9 +6,7 @@ import { User } from '../user/entities/user.entity';
 import { ProcessedStellarEvent } from '../blockchain/entities/processed-event.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([User, ProcessedStellarEvent]),
-  ],
+  imports: [TypeOrmModule.forFeature([User, ProcessedStellarEvent])],
   controllers: [AnalyticsController],
   providers: [AnalyticsService],
   exports: [AnalyticsService],

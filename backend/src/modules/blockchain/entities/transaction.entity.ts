@@ -8,6 +8,7 @@ import {
 
 export enum LedgerTransactionType {
   DEPOSIT = 'DEPOSIT',
+  YIELD = 'YIELD',
 }
 
 @Entity('transactions')

@@ -39,7 +39,8 @@ export class AnalyticsService {
     }
 
     // 1. Get current balance (anchor)
-    const currentSavings = await this.blockchainSavingsService.getUserSavingsBalance(user.publicKey);
+    const currentSavings =
+      await this.blockchainSavingsService.getUserSavingsBalance(user.publicKey);
     const currentTotal = currentSavings.total;
 
     // 2. Define intervals based on timeframe
@@ -84,9 +85,9 @@ export class AnalyticsService {
     });
 
     // Mock filtering for the user based on public key in eventData
-    const userEvents = events.filter(event => {
-        const xdr = JSON.stringify(event.eventData);
-        return xdr.includes(user.publicKey!);
+    const userEvents = events.filter((event) => {
+      const xdr = JSON.stringify(event.eventData);
+      return xdr.includes(user.publicKey!);
     });
 
     // 4. Group events by period and calculate net change per period
@@ -94,30 +95,32 @@ export class AnalyticsService {
     let runningBalance = currentTotal;
 
     for (let i = 0; i < points; i++) {
-        const periodEnd = new Date(now.getTime() - i * intervalMs);
-        const periodStart = new Date(now.getTime() - (i + 1) * intervalMs);
+      const periodEnd = new Date(now.getTime() - i * intervalMs);
+      const periodStart = new Date(now.getTime() - (i + 1) * intervalMs);
 
-        const periodEvents = userEvents.filter(e => 
-            e.processedAt <= periodEnd && e.processedAt > periodStart
-        );
+      const periodEvents = userEvents.filter(
+        (e) => e.processedAt <= periodEnd && e.processedAt > periodStart,
+      );
 
-        let netChange = 0;
-        for (const event of periodEvents) {
-            const amount = this.extractAmount(event);
-            if (event.eventType.toLowerCase().includes('deposit') || 
-                event.eventType.toLowerCase().includes('interest')) {
-                netChange += amount;
-            } else if (event.eventType.toLowerCase().includes('withdraw')) {
-                netChange -= amount;
-            }
+      let netChange = 0;
+      for (const event of periodEvents) {
+        const amount = this.extractAmount(event);
+        if (
+          event.eventType.toLowerCase().includes('deposit') ||
+          event.eventType.toLowerCase().includes('interest')
+        ) {
+          netChange += amount;
+        } else if (event.eventType.toLowerCase().includes('withdraw')) {
+          netChange -= amount;
         }
+      }
 
-        timeline.push({
-            date: this.formatDate(periodEnd, timeframe),
-            value: runningBalance,
-        });
+      timeline.push({
+        date: this.formatDate(periodEnd, timeframe),
+        value: runningBalance,
+      });
 
-        runningBalance -= netChange;
+      runningBalance -= netChange;
     }
 
     return timeline.reverse();
@@ -174,21 +177,24 @@ export class AnalyticsService {
 
   private extractAmount(event: ProcessedStellarEvent): number {
     try {
-        const data = event.eventData as any;
-        return data.amount || 0; 
+      const data = event.eventData as any;
+      return data.amount || 0;
     } catch (e) {
-        return 0;
+      return 0;
     }
   }
 
   private formatDate(date: Date, timeframe: PortfolioTimeframe): string {
     if (timeframe === PortfolioTimeframe.DAY) {
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     }
     return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
     });
   }
 }
