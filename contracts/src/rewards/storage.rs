@@ -1,8 +1,10 @@
 use super::storage_types::{RewardsDataKey, UserRewards};
 use crate::errors::SavingsError;
 use crate::rewards::config::get_rewards_config;
-use crate::rewards::events::{emit_bonus_awarded, emit_points_awarded, emit_rewards_claimed, emit_streak_updated};
-use soroban_sdk::{Address, Env, Symbol, token};
+use crate::rewards::events::{
+    emit_bonus_awarded, emit_points_awarded, emit_rewards_claimed, emit_streak_updated,
+};
+use soroban_sdk::{token, Address, Env, Symbol};
 
 /// Duration threshold for long-lock bonus eligibility (in seconds).
 pub const LONG_LOCK_BONUS_THRESHOLD_SECS: u64 = 180 * 24 * 60 * 60;
