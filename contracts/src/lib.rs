@@ -19,6 +19,7 @@ mod lock;
 pub mod rewards;
 mod storage_types;
 pub mod strategy;
+pub mod token;
 pub mod treasury;
 mod ttl;
 mod upgrade;
@@ -164,6 +165,10 @@ impl NesteraContract {
             .set(&DataKey::AdminPublicKey, &admin_public_key);
         env.storage().instance().set(&DataKey::Initialized, &true);
         env.storage().persistent().set(&DataKey::Paused, &false);
+
+        // Initialize native protocol token (supply assigned to admin/deployer as treasury)
+        token::initialize_token(&env, admin.clone(), 1_000_000_000_0000000)
+            .unwrap_or_else(|e| panic_with_error!(&env, e));
 
         // Extend TTL for paused state
         ttl::extend_config_ttl(&env, &DataKey::Paused);
@@ -764,6 +769,11 @@ impl NesteraContract {
             .persistent()
             .get(&DataKey::TotalBalance(recipient))
             .unwrap_or(0)
+    }
+
+    /// Returns the native protocol token metadata (name, symbol, decimals, total_supply, treasury).
+    pub fn get_token_metadata(env: Env) -> Result<token::TokenMetadata, SavingsError> {
+        token::get_token_metadata(&env)
     }
 
     // ========== Rewards Functions ==========
